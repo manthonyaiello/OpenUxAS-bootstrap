@@ -11,7 +11,12 @@ else
 fi
 
 _run_example_completions() {
-  COMPREPLY=( $( compgen -W "$( ${INSTALL_DIR}/../run-example --list )" -- "${COMP_WORDS[1]}" ) )
+  _OPTIONS="$( ${INSTALL_DIR}/../run-example --complete-options )"
+  if [ $? != 0 ]; then
+    COMPREPLY=("Autocomplete not available; build OpenUxAS using \`./anod build uxas\`" " ")
+  else
+    COMPREPLY=( $( compgen -W "${_OPTIONS}" -- "${COMP_WORDS[1]}" ) )
+  fi
 }
 
 complete -F _run_example_completions run-example

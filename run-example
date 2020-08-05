@@ -2,6 +2,21 @@
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+if [ $1 == "--complete-options" ]; then
+    # Need to be able to find run-example, which will be in the src dir that
+    # this sets.
+    eval "$( "${ROOT_DIR}"/anod printenv uxas )"
+
+    # Is it there?
+    if [ ! -f "${UXAS_SOURCE_DIR}/run-example" ]; then
+        echo "You must build OpenUxAS first, using \`./anod build uxas\`"
+        exit 1
+    fi
+
+    "${UXAS_SOURCE_DIR}/run-example" --complete-options
+    exit 0
+fi
+
 # First, let's set up our environment.
 eval "$( "${ROOT_DIR}"/anod printenv uxas )"
 eval "$( "${ROOT_DIR}"/anod printenv uxas-ada )"
@@ -9,12 +24,12 @@ eval "$( "${ROOT_DIR}"/anod printenv amase )"
 
 # Now, as a sanity check, let's make sure that uxas and amase have been built.
 if [ ! -f "${UXAS_INSTALL_DIR}"/bin/uxas ]; then
-    echo "You need to build OpenUxAS first, using \`./anod-build uxas\`"
+    echo "You need to build OpenUxAS first, using \`./anod build uxas\`"
     exit 1
 fi
 
 if [ ! -f "${AMASE_SOURCE_DIR}"/OpenAMASE/build/classes/MakeDistribution.class ]; then
-    echo "You need to build OpenAMASE first, using \`./anod-build amase\`"
+    echo "You need to build OpenAMASE first, using \`./anod build amase\`"
     exit 2
 fi
 

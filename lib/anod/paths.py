@@ -9,6 +9,7 @@ REPO_DIR = os.path.realpath(
         "..",
     )
 )
+
 SPEC_DIR = os.path.join(
     REPO_DIR,
     "specs",

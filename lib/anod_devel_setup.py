@@ -193,7 +193,7 @@ def do_devel_setup(m: Main, set_prog: bool = True) -> int:
 
             from lib.anod_configure_vscode import do_configure
 
-            return do_configure(m)
+            return do_configure(m, uxas_dir=args.uxas_clone_dir)
 
         if "lmcp" in args.component:
             update_yaml(REPOSITORIES_YAML_PATH, LMCP_YAML_KEY, args.lmcp_clone_dir)

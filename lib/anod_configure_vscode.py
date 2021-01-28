@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from lib.anod.util import check_common_tools, create_anod_context, create_anod_sandbox
-from lib.anod.paths import SPEC_DIR, SBX_DIR
+from lib.anod.paths import SPEC_DIR, SBX_DIR, REPO_DIR
 
 from e3.main import Main
 from e3.env import BaseEnv
@@ -13,17 +13,24 @@ from e3.env import BaseEnv
 import logging
 import os
 import pathlib
+from string import Template
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Optional
 
 
 # Template for the c_cpp_properties.json file we generate
-C_CPP_PROPERTIES_JSON = """\
+C_CPP_PROPERTIES_JSON = Template(
+    """\
 {
     "configurations": [
         {
             "name": "OpenUxAS",
             "includePath": [
-                "${workspaceFolder}/**",
-                "%s"
+                "$${workspaceFolder}/**",
+                "${paths}"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
@@ -35,11 +42,46 @@ C_CPP_PROPERTIES_JSON = """\
     "version": 4
 }
 """
+)
 
-DEFAULT_PATH = "develop/OpenUxAS/.vscode/c_cpp_properties.json"
+TASKS_JSON = Template(
+    """\
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build OpenUxAS C++",
+            "type": "shell",
+            "command": "PATH=\"${bootstrap}/vpython/bin\":\"$$PATH\" make -j all",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+
+        {
+            "label": "Clean OpenUxAS C++",
+            "type": "shell",
+            "command": "PATH=\"${bootstrap}/vpython/bin\":\"$$PATH\" make clean",
+            "problemMatcher": [],
+            "group": "none",
+        },
+    ]
+}
+"""
+)
+
+DEFAULT_PATH = "develop/OpenUxAS"
+
+VSCODE_DIR = ".vscode"
+C_CPP_PROPERTIES_FILENAME = "c_cpp_properties.json"
+TASKS_FILENAME = "tasks.json"
 
 
-def do_configure(m: Main, set_prog: bool = True) -> int:
+def do_configure(m: Main, uxas_dir: Optional[str] = None, set_prog: bool = True) -> int:
     """Create the configuration file for VS Code."""
     if set_prog:
         m.argument_parser.prog = m.argument_parser.prog + " configure-vscode"
@@ -58,16 +100,11 @@ def do_configure(m: Main, set_prog: bool = True) -> int:
         default=SBX_DIR,
     )
 
-    output_group = m.argument_parser.add_mutually_exclusive_group()
-    output_group.add_argument(
-        "--stdout",
-        help="print the configuration file to STDOUT",
-        action="store_true",
-        default=False,
-    )
-
-    output_group.add_argument(
-        "--out", help="specify the output file", default=DEFAULT_PATH
+    m.argument_parser.add_argument(
+        "--out-dir",
+        help="specify the output directory that will contain the .vscode directory "
+        "and generated contents",
+        default=DEFAULT_PATH,
     )
 
     m.parse_args()
@@ -92,19 +129,28 @@ def do_configure(m: Main, set_prog: bool = True) -> int:
     if hasattr(anod_instance, "build_setenv"):
         anod_instance.build_setenv()
 
-        config_content = C_CPP_PROPERTIES_JSON % '",\n                "'.join(
-            os.environ["CPLUS_INCLUDE_PATH"].split(os.pathsep)
-        )
-
-        if m.args.stdout:
-            print(config_content)
+        if uxas_dir is not None:
+            abspath = os.path.abspath(uxas_dir)
         else:
-            abspath = os.path.abspath(m.args.out)
+            abspath = os.path.abspath(m.args.out_dir)
 
-            if not os.path.exists(os.path.dirname(abspath)):
-                pathlib.Path(os.path.dirname(abspath)).mkdir(parents=True)
+        vscode_dir = os.path.join(abspath, VSCODE_DIR)
+        c_cpp_file = os.path.join(vscode_dir, C_CPP_PROPERTIES_FILENAME)
+        task_file = os.path.join(vscode_dir, TASKS_FILENAME)
 
-            open(abspath, "w").write(config_content)
+        if not os.path.exists(vscode_dir):
+            pathlib.Path(vscode_dir).mkdir(parents=True)
+
+        c_cpp_content = C_CPP_PROPERTIES_JSON.substitute(
+            paths='",\n                "'.join(
+                os.environ["CPLUS_INCLUDE_PATH"].split(os.pathsep)
+            )
+        )
+        open(c_cpp_file, "w").write(c_cpp_content)
+
+        if m.args.spec_name == "uxas":
+            task_content = TASKS_JSON.substitute(bootstrap=REPO_DIR)
+            open(task_file, "w").write(task_content)
 
         return 0
     else:

@@ -551,21 +551,25 @@ For example, for the most verbose logging, you can pass `-vv` to most scripts.
 ## 5.1. VS Code<a name="vscode" />
 
 [Visual Studio Code](#https://code.visualstudio.com/) (VS Code) is an open-source, lightweight IDE supporting a large and growing number of langauges.
-VS Code can be used to edit C and C++ code.
+VS Code can be used to edit and build C and C++ code.
 VS Code also provides feedback to developers of potential problems with their code and offers support for navigating code.
 
 To take full advantage of VS Code's capabilities, you must provide VS Code with the set of paths that should be searched to resolve header files included for project dependencies.
 These settings are placed in a special JSON file named `c_cpp_properties.json` in the (typically hidden) directory `.vscode`.
+To build C and C++ code with VS Code, you must provide descriptions of your build tasks.
+These settings are placed in a special JSON file name `tasks.json`.
 
-When using anod to supply OpenUxAS dependencies, this means that you must provide VS Code with paths into the anod sandbox for each OpenUxAS dependency.
-To simplify this process, anod includes a command `configure-vscode` that will generate the `c_cpp_properties.json` and, by default, place it in the expected location: under `develop/OpenUxAS/.vscode`.
+When using anod to supply OpenUxAS dependencies, this means that you must provide VS Code with paths into the anod sandbox for each OpenUxAS dependency and the location of the anod environment for the build.
+To simplify this process, anod includes a command `configure-vscode` that will generate the `c_cpp_properties.json` and `tasks.json` files. By default, anod will place these files in the expected location: under `develop/OpenUxAS/.vscode`.
 
-If you used `anod devel-setup uxas` to configure your bootstrap environment for OpenUxAS development, you don't have to do anything extra: anod has already created `develop/OpenUxAS/.vscode/c_cpp_properties.json` for you.
+If you used `anod devel-setup uxas` to configure your bootstrap environment for OpenUxAS development, you don't have to do anything extra: anod has already created `develop/OpenUxAS/.vscode/c_cpp_properties.json` and `develop/OpenUxAS/vscode/tasks.json` for you.
+If you want to refresh or update these files, you can run `anod configure-vscode` manually, like this:
+
+    ~/bootstrap$ ./anod configure-vscode uxas
 
 If you manually configured your bootstrap environment for OpenUxAS development and you want to use VS Code for OpenUxAS development, you should run `anod configure-vscode` like this:
 
-    ~/bootstrap$ ./anod configure-vscode --out /path/to/OpenUxAS/.vscode/c_cpp_properties.json
+    ~/bootstrap$ ./anod configure-vscode --out-dir /path/to/OpenUxAS uxas
 
-You can also have anod print the file to STDOUT and redirect it elsewhere, like this:
-
-    ~/bootstrap$ ./anod configure-vscode --stdout > /path/to/OpenUxAS/.vscode/c_cpp_properties.json
+***Note*: anod will *replace* and existing `.vscode/c_cpp_properties.json` or `.vscode/tasks.json` files in the target directory.
+You *should not* run this command if you have made changes to your VS Code configuration.**
